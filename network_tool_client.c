@@ -11,11 +11,11 @@
 #define MSG_SZE 100
 #define CIPHER_TXT_LEN 128
 
-void encrypt(char* msg, char* cipher_txt){
+void encrypt(char* msg, char* cipher_txt, int* cipher_txt_len){
 
     char key[32] = "0123456789qwertyuiopasdfghjklzxc";
     char iv[16] = "0123456789abcdef";
-    int cipher_txt_len = CIPHER_TXT_LEN;
+    
 
     EVP_CIPHER_CTX *ctx;
 ctx = EVP_CIPHER_CTX_new();
@@ -30,13 +30,13 @@ if (EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv) != 1){
     exit(EXIT_FAILURE);
 }
 
-if(EVP_EncryptUpdate(ctx, cipher_txt, &cipher_txt_len, msg, (int)strlen(msg) ) != 1){
+if(EVP_EncryptUpdate(ctx, cipher_txt, cipher_txt_len, msg, (int)strlen(msg) ) != 1){
 
     perror("Error encrypting");
     exit(EXIT_FAILURE);
 }
 
-if (EVP_EncryptFinal_ex(ctx, cipher_txt, &cipher_txt_len) != 1){
+if (EVP_EncryptFinal_ex(ctx, cipher_txt, cipher_txt_len) != 1){
 
     perror("Error encrypting");
     exit(EXIT_FAILURE);
@@ -47,6 +47,7 @@ if (EVP_EncryptFinal_ex(ctx, cipher_txt, &cipher_txt_len) != 1){
 int communicate(char* msg){
 
     char cipher_txt[CIPHER_TXT_LEN];
+    int cipher_txt_len = CIPHER_TXT_LEN;
     printf("%s", msg);
 
     int sockfd;
@@ -70,16 +71,26 @@ int communicate(char* msg){
         exit(EXIT_FAILURE);
     }
 
-    encrypt(msg, cipher_txt);
-    printf("Encrypted message %s as %s\n", msg, cipher_txt);
+    encrypt(msg, cipher_txt, &cipher_txt_len);
+    printf("Encrypted message %s with size: %d,  as %s with encrypted size %d\n", msg, (int)strlen(msg), cipher_txt, cipher_txt_len);
     //send message to remote server
+
     int bytes_sent = 0;
-    while(bytes_sent < MSG_SZE){
+
+    while(bytes_sent < sizeof(cipher_txt_len)){
+        printf("Sending: %d\n", cipher_txt_len);
+        bytes_sent += send(sockfd, &cipher_txt_len+bytes_sent, cipher_txt_len-bytes_sent, 0);
+        printf("sent: %d bytes of %d bytes sent\n", bytes_sent, cipher_txt_len);
+    }
+
+    
+    bytes_sent = 0;
+    while(bytes_sent < cipher_txt_len){
         
         printf("Sending: %s\n", cipher_txt+bytes_sent);
         
-        bytes_sent+=send(sockfd, cipher_txt+bytes_sent, MSG_SZE-bytes_sent, 0);
-        printf("sent: %d bytes of %d bytes sent\n", bytes_sent, MSG_SZE);
+        bytes_sent+=send(sockfd, cipher_txt+bytes_sent, cipher_txt_len-bytes_sent, 0);
+        printf("sent: %d bytes of %d bytes sent\n", bytes_sent, cipher_txt_len);
 
     }
 

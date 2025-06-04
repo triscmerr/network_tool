@@ -13,7 +13,7 @@ void decrypt(char* plain_txt, char* cipher_txt){
     char key[32] = "0123456789qwertyuiopasdfghjklzxc";
     char iv[16] = "0123456789abcdef";
 
-    int plain_txt_len = strlen(cipher_txt);
+    int plain_txt_len = 100;
 
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx){
@@ -23,7 +23,7 @@ void decrypt(char* plain_txt, char* cipher_txt){
     
     EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
 
-    EVP_DecryptUpdate(ctx, plain_txt, &plain_txt_len, cipher_txt, strlen(cipher_txt));
+    EVP_DecryptUpdate(ctx, plain_txt, &plain_txt_len, cipher_txt, 100);
 
     EVP_DecryptFinal_ex(ctx, plain_txt, &plain_txt_len);
 
@@ -74,18 +74,22 @@ if (client_sock == -1) {
     exit(EXIT_FAILURE);
 }
 
+int msg_len = 0;
+
+recv(client_sock,&msg_len, sizeof(msg_len), 0);
+msg_len=ntohl(msg_len); // Convert from network byte order to host byte order
+printf("Message length received: %d\n", msg_len);
 memset(buffer, 0, sizeof(buffer));
 recv(client_sock, buffer, sizeof(buffer), 0);   
 decrypt(buffer_decrypted, buffer);
 
 char decrypt_msg [100];
 strncpy(decrypt_msg, buffer_decrypted, 100);
-printf("Here is the received string: %s - decrypted as: %s\n", buffer, buffer_decrypted);
+printf("Here is the received string: %s of size %d - decrypted as: %s\n", buffer, (int)strlen(buffer), buffer_decrypted);
 
-for(int i =0; i < sizeof(buffer_decrypted); i++){
 
-    buffer_decrypted[i] = buffer_decrypted[i]+1;
-}
+    strcat(buffer_decrypted, " String received, returning from client!");
+
 
 int bytes_sent = 0;
 while (bytes_sent < sizeof(buffer_decrypted)){
