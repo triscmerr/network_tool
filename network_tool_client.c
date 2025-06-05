@@ -76,7 +76,7 @@ int communicate(char* msg){
     //send message to remote server
 
     int bytes_sent = 0;
-
+    printf("testing send\n");
     while(bytes_sent < sizeof(cipher_txt_len)){
         printf("Sending: %d\n", cipher_txt_len);
         bytes_sent += send(sockfd, &cipher_txt_len+bytes_sent, cipher_txt_len-bytes_sent, 0);
