@@ -20,9 +20,11 @@ all: $(CLIENT_TARGET) $(SERVER_TARGET)
 # Link object files to create the executable
 $(CLIENT_TARGET): $(CLIENT_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	rm -f $(CLIENT_OBJS)
 
 $(SERVER_TARGET): $(SERVER_OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	rm -f $(SERVER_OBJS)
 
 # Compile source files to object files
 %.o: %.c
