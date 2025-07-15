@@ -73,19 +73,27 @@ int communicate(char* msg){
 
     encrypt(msg, cipher_txt, &cipher_txt_len);
     printf("Encrypted message %s with size: %d,  as %s with encrypted size %d\n", msg, (int)strlen(msg), cipher_txt, cipher_txt_len);
+    printf("Hex dump of buffer:\n");
+    for (int i = 0; i < cipher_txt_len; i++) {
+        printf("%02x ", (unsigned char)cipher_txt[i]);
+        if ((i + 1) % 16 == 0) printf("\n");
+    }
+        printf("\n");
     //send message to remote server
 
     int bytes_sent = 0;
     printf("testing send\n");
     while(bytes_sent < sizeof(cipher_txt_len)){
         printf("Sending: %d\n", cipher_txt_len);
-        bytes_sent += send(sockfd, &cipher_txt_len+bytes_sent, cipher_txt_len-bytes_sent, 0);
+        bytes_sent += send(sockfd, &cipher_txt_len+bytes_sent, sizeof(cipher_txt_len)-bytes_sent, 0);
         printf("sent: %d bytes of %d bytes sent\n", bytes_sent, cipher_txt_len);
     }
 
     
     bytes_sent = 0;
     while(bytes_sent < cipher_txt_len){
+        
+        
         
         printf("Sending: %s\n", cipher_txt+bytes_sent);
         

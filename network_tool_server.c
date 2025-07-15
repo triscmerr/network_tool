@@ -13,19 +13,30 @@ void decrypt(char* plain_txt, char* cipher_txt, int cipher_txt_len){
     char key[32] = "0123456789qwertyuiopasdfghjklzxc";
     char iv[16] = "0123456789abcdef";
 
-    int plain_txt_len = 100;
-
+    int plain_txt_len;
+    int final_len;
     EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
     if (!ctx){
     perror("Error creating cipher context\n");
     exit(EXIT_FAILURE);
 }
     
-    EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
+    if (!EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv)) {
 
-    EVP_DecryptUpdate(ctx, plain_txt, &plain_txt_len, cipher_txt, cipher_txt_len);
-
-    EVP_DecryptFinal_ex(ctx, plain_txt, &plain_txt_len);
+    perror("Error initializing the cipher\n");
+    exit(EXIT_FAILURE);
+    }
+    EVP_CIPHER_CTX_set_padding(ctx, 1); // Enable padding (default)
+    if (!EVP_DecryptUpdate(ctx, plain_txt, &plain_txt_len, cipher_txt, cipher_txt_len)) {
+    perror("Error decrypting");
+    exit(EXIT_FAILURE);
+    }
+  
+    printf("Encrypted length: %d\n", cipher_txt_len);
+    if (!EVP_DecryptFinal_ex(ctx, plain_txt+plain_txt_len, &final_len)) {
+    perror("Error finalizing decryption"); 
+    exit(EXIT_FAILURE);
+    }
 
 
 }
@@ -80,7 +91,28 @@ recv(client_sock,&msg_len, sizeof(msg_len), 0);
 //msg_len=ntohl(msg_len); // Convert from network byte order to host byte order
 printf("Message length received: %d\n", msg_len);
 memset(buffer, 0, sizeof(buffer));
-recv(client_sock, buffer, sizeof(buffer), 0);   
+
+int bytes = 0;
+int bytes_recvd = 0;
+bytes_recvd = recv(client_sock, buffer, sizeof(buffer), 0);
+printf("Bytes received: %d\n", bytes_recvd);
+while (bytes_recvd < msg_len) {
+    bytes = recv(client_sock, buffer + bytes_recvd, sizeof(buffer)   - bytes_recvd, 0);
+    printf("Bytes received in loop: %d\n", bytes);
+    if (bytes <= 0) {
+        perror("Error receiving data");
+        close(client_sock);
+        exit(EXIT_FAILURE);
+    }
+    bytes_recvd += bytes;
+}
+printf("Hex dump of buffer:\n");
+for (int i = 0; i < msg_len; i++) {
+    printf("%02x ", (unsigned char)buffer[i]);
+    if ((i + 1) % 16 == 0) printf("\n");
+}
+printf("\n");
+printf("This is the cipher text: %s at address: %p\n", buffer, buffer); 
 decrypt(buffer_decrypted, buffer, msg_len);
 printf("Decrypted message: %s\n", buffer_decrypted);
 char decrypt_msg [100];
