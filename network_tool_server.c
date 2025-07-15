@@ -8,7 +8,7 @@
 #include <string.h>
 #include <openssl/evp.h>
 
-void decrypt(char* plain_txt, char* cipher_txt){
+void decrypt(char* plain_txt, char* cipher_txt, int cipher_txt_len){
 
     char key[32] = "0123456789qwertyuiopasdfghjklzxc";
     char iv[16] = "0123456789abcdef";
@@ -23,7 +23,7 @@ void decrypt(char* plain_txt, char* cipher_txt){
     
     EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key, iv);
 
-    EVP_DecryptUpdate(ctx, plain_txt, &plain_txt_len, cipher_txt, 100);
+    EVP_DecryptUpdate(ctx, plain_txt, &plain_txt_len, cipher_txt, cipher_txt_len);
 
     EVP_DecryptFinal_ex(ctx, plain_txt, &plain_txt_len);
 
@@ -77,12 +77,12 @@ if (client_sock == -1) {
 int msg_len = 0;
 
 recv(client_sock,&msg_len, sizeof(msg_len), 0);
-msg_len=ntohl(msg_len); // Convert from network byte order to host byte order
+//msg_len=ntohl(msg_len); // Convert from network byte order to host byte order
 printf("Message length received: %d\n", msg_len);
 memset(buffer, 0, sizeof(buffer));
 recv(client_sock, buffer, sizeof(buffer), 0);   
-decrypt(buffer_decrypted, buffer);
-
+decrypt(buffer_decrypted, buffer, msg_len);
+printf("Decrypted message: %s\n", buffer_decrypted);
 char decrypt_msg [100];
 strncpy(decrypt_msg, buffer_decrypted, 100);
 printf("Here is the received string: %s of size %d - decrypted as: %s\n", buffer, (int)strlen(buffer), buffer_decrypted);
